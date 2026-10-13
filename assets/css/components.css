@@ -237,6 +237,28 @@ table.g-table tbody tr:hover td.col-op { background: var(--g-brand-pale); }
 .fab-group { position: absolute; right: 16px; bottom: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 40; }
 .fab { width: 48px; height: 48px; border-radius: 50%; background: var(--g-brand); color: #1b3300; border: 0; cursor: pointer; font-size: 11px; line-height: 1.1; box-shadow: var(--g-shadow-pop); display: flex; align-items: center; justify-content: center; text-align: center; }
 
+/* ---------------- 系统管理:单选组 / 权限树 / 菜单树(固定三页复用) ---------------- */
+.radio-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.radio-row label { display: inline-flex; align-items: center; gap: 5px; font-size: var(--g-fs-12); color: var(--g-text); cursor: pointer; }
+.radio-row input { accent-color: var(--g-brand-dark); }
+
+.perm-tree { border: 1px solid var(--g-border); border-radius: var(--g-radius-4); max-height: 320px; overflow: auto; padding: 8px 10px; background: var(--g-surface); }
+.perm-tools { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+.perm-tools label { display: inline-flex; align-items: center; gap: 5px; font-size: var(--g-fs-12); color: var(--g-text-sub); cursor: pointer; }
+.perm-group { border-bottom: 1px dashed var(--g-border-soft); padding: 6px 0; }
+.perm-group:last-child { border-bottom: 0; }
+.perm-group > .pg-head { display: flex; align-items: center; gap: 6px; font-size: var(--g-fs-12); font-weight: var(--g-fw-bold); color: var(--g-text); }
+.perm-group > .pg-head label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.perm-children { padding: 6px 0 2px 24px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.perm-leaf { display: inline-flex; align-items: center; gap: 5px; font-size: var(--g-fs-12); color: var(--g-text-sub); cursor: pointer; }
+.tree-caret { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--g-text-weak); flex: none; user-select: none; }
+.tree-caret.collapsed { transform: rotate(-90deg); }
+
+.menu-caret { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; cursor: pointer; color: var(--g-text-weak); vertical-align: middle; }
+.menu-caret.collapsed { transform: rotate(-90deg); }
+.menu-caret.leaf { visibility: hidden; }
+.perm-badge { font-size: var(--g-fs-10); padding: 1px 6px; border-radius: var(--g-radius-2); background: var(--g-brand-pale); color: var(--g-brand-dark); }
+
 /* ---------------- 容器适配 (R083,R119,R150,R158) ---------------- */
 @container (max-width: 1280px) { .info-grid { --info-cols: 3; } }
 @container (max-width: 1100px) { .info-grid { --info-cols: 2; } .form-grid { --form-cols: 2; } .card-grid { --card-cols: 3; } .filter-grid { --filter-cols: 3; } }

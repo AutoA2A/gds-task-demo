@@ -50,8 +50,22 @@
 
   var Shell = {};
 
+  // 固定「系统管理」导航(所有 demo 自动引用:角色管理 / 用户管理 / 菜单管理)
+  var SYS_PRIMARY = {
+    id: 'sys', label: '系统管理', icon: 'gear', children: [
+      { id: 'sys-roles', label: '角色管理', page: 'sys-roles.html' },
+      { id: 'sys-users', label: '用户管理', page: 'sys-users.html' },
+      { id: 'sys-menus', label: '菜单管理', page: 'sys-menus.html' }
+    ]
+  };
+
   Shell.render = function () {
     var cfg = window.GUI_NAV || { brand: 'George Design', primary: [] };
+    cfg.primary = cfg.primary || [];
+    // 自动把「系统管理」追加到末尾(除非 demo 已自定义同名一级)
+    var hasSys = false;
+    for (var si = 0; si < cfg.primary.length; si++) if (cfg.primary[si].id === 'sys') hasSys = true;
+    if (!hasSys) cfg.primary = cfg.primary.concat([SYS_PRIMARY]);
     var activeLeaf = document.body.getAttribute('data-page') || '';
     if (cfg.theme) document.documentElement.setAttribute('data-theme', cfg.theme);
 
@@ -89,6 +103,10 @@
       b.addEventListener('click', function () { Shell.toast(titles[ic] + '(演示)'); });
       tools.appendChild(b);
     });
+    // 固定「系统设置」齿轮:直达系统管理(角色管理)
+    var sysGear = h('button', { class: 'sys-icon-btn', title: '系统设置' }, svg('gear'));
+    sysGear.addEventListener('click', function () { location.href = 'sys-roles.html'; });
+    tools.appendChild(sysGear);
     // 身份切换(演示用,不是权限控制)
     if (cfg.identities && cfg.identities.length) {
       var cur = Shell.currentIdentity();

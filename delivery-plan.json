@@ -8,7 +8,10 @@
     { "id": "task-square", "title": "任务广场", "file": "assets/pages/task-square.html", "contentSelector": "#page-content" },
     { "id": "my-tasks", "title": "我的任务", "file": "assets/pages/my-tasks.html", "contentSelector": "#page-content" },
     { "id": "review", "title": "任务详情/审批", "file": "assets/pages/review.html", "contentSelector": "#page-content" },
-    { "id": "assignment", "title": "分单表单", "file": "assets/pages/assignment.html", "contentSelector": "#page-content" }
+    { "id": "assignment", "title": "分单表单", "file": "assets/pages/assignment.html", "contentSelector": "#page-content" },
+    { "id": "sys-roles", "title": "角色管理", "file": "assets/pages/sys-roles.html", "contentSelector": "#page-content" },
+    { "id": "sys-users", "title": "用户管理", "file": "assets/pages/sys-users.html", "contentSelector": "#page-content" },
+    { "id": "sys-menus", "title": "菜单管理", "file": "assets/pages/sys-menus.html", "contentSelector": "#page-content" }
   ],
   "features": [
     {
@@ -86,6 +89,39 @@
         { "action": "click", "target": "#btn-save" },
         { "action": "expectText", "target": "#tip-exec", "value": "必填校验提示出现" },
         { "action": "expectValue", "target": "#in-reward", "value": "赏金默认带出" }
+      ]
+    },
+    {
+      "id": "sys-roles-perm",
+      "pageId": "sys-roles",
+      "description": "角色管理:新增/编辑角色,权限控制四档 + 菜单权限树(目录与子级联动、全选、展开折叠)",
+      "implementation": ["assets/pages/sys-roles.html", "assets/js/sys-data.js", "assets/js/shell.js", "assets/css/components.css"],
+      "steps": [
+        { "action": "click", "target": "[data-edit]" },
+        { "action": "expectCount", "target": ".perm-tree", "value": "1" },
+        { "action": "expectText", "target": ".perm-group .pg-head", "value": "菜单目录可见" }
+      ]
+    },
+    {
+      "id": "sys-users-bind",
+      "pageId": "sys-users",
+      "description": "用户管理:为用户绑定角色,用户即获得该角色权限范围与可见菜单(表格权限范围列联动更新)",
+      "implementation": ["assets/pages/sys-users.html", "assets/js/sys-data.js", "assets/js/shell.js"],
+      "steps": [
+        { "action": "click", "target": "[data-cfg]" },
+        { "action": "expectText", "target": "#cfg-preview", "value": "权限范围与可见菜单随角色联动" },
+        { "action": "expectCount", "target": "#rows tr", "value": "用户列表渲染" }
+      ]
+    },
+    {
+      "id": "sys-menus-tree",
+      "pageId": "sys-menus",
+      "description": "菜单管理:树形展示(含固定系统管理目录),支持新增下级/编辑/删除/展开折叠",
+      "implementation": ["assets/pages/sys-menus.html", "assets/js/sys-data.js", "assets/css/components.css"],
+      "steps": [
+        { "action": "click", "target": "[data-caret]" },
+        { "action": "expectCount", "target": "#rows tr", "value": "目录与菜单行渲染" },
+        { "action": "expectText", "target": "#rows tr", "value": "系统管理目录可见" }
       ]
     }
   ]

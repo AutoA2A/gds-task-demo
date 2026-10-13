@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>用户管理 · 系统管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body data-page="sys-users">
+  <template id="page-content">
+    <div class="panel">
+      <div class="filter-bar">
+        <div class="filter-grid" style="--filter-cols:4">
+          <div class="filter-item"><label>用户名</label><input class="field" id="f-name" placeholder="请输入"></div>
+          <div class="filter-item"><label>账号状态</label><select class="field" id="f-acc"><option value="">全部</option><option>启用</option><option>停用</option></select></div>
+          <div class="filter-item"><label>员工状态</label><select class="field" id="f-emp"><option value="">全部</option><option>在职</option><option>离职</option></select></div>
+          <div class="filter-item"><label>权限角色</label><select class="field" id="f-role"><option value="">全部</option></select></div>
+          <div class="filter-item filter-actions"><button class="btn" id="f-reset">重置</button><button class="btn primary" id="f-go">查询</button></div>
+        </div>
+      </div>
+      <div class="op-bar">
+        <div class="op-left"><button class="btn primary" id="op-add">+ 新增用户</button><button class="btn" id="op-batch">批量配置角色</button></div>
+        <div class="op-right"><span class="sel-count">已选 <b id="sel-n">0</b> 条 · 共 <b id="total">0</b> 人</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th class="col-check"><input type="checkbox" id="check-all"></th>
+            <th>用户名</th><th>所属部门</th><th>权限角色</th><th>权限范围</th><th>账号状态</th><th>员工状态</th><th class="col-op">操作</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+      <div class="list-foot"><div class="list-stats">共 <b id="total2">0</b> 条记录</div></div>
+    </div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/sys-data.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var state = window.SYS.load();
+    var sel = {};
+    var ff = { name: '', acc: '', emp: '', role: '' };
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+    function roleName(id) { var r = window.SYS.roleById(state, id); return r ? r.name : '未分配权限'; }
+
+    // 角色下拉
+    var fr = document.getElementById('f-role');
+    state.roles.forEach(function (r) { fr.innerHTML += '<option value="' + r.id + '">' + esc(r.name) + '</option>'; });
+
+    function filtered() {
+      return state.users.filter(function (u) {
+        if (ff.name && u.name.toLowerCase().indexOf(ff.name.toLowerCase()) < 0) return false;
+        if (ff.acc && u.account_status !== ff.acc) return false;
+        if (ff.emp && u.employee_status !== ff.emp) return false;
+        if (ff.role && u.roleId !== ff.role) return false;
+        return true;
+      });
+    }
+
+    function render() {
+      var list = filtered();
+      var tb = document.getElementById('rows'); tb.innerHTML = '';
+      if (!list.length) tb.innerHTML = '<tr><td colspan="8"><div class="g-empty">没有符合条件的用户</div></td></tr>';
+      list.forEach(function (u) {
+        var eff = window.SYS.effective(state, u);
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="col-check"><input type="checkbox" data-id="' + u.id + '" ' + (sel[u.id] ? 'checked' : '') + '></td>' +
+          '<td style="font-weight:600">' + esc(u.name) + '</td>' +
+          '<td>' + esc(u.dept) + '</td>' +
+          '<td>' + (u.roleId ? '<span class="tag info">' + esc(roleName(u.roleId)) + '</span>' : '<span class="tag neutral">未分配</span>') + '</td>' +
+          '<td>' + eff.scope + (eff.scope !== '全权限' && eff.scope !== '无权限' ? ' · ' + eff.count + ' 项' : '') + '</td>' +
+          '<td><span class="tag ' + (u.account_status === '启用' ? 'success' : 'neutral') + '">' + u.account_status + '</span></td>' +
+          '<td><span class="tag ' + (u.employee_status === '在职' ? 'success' : 'error') + '">' + u.employee_status + '</span></td>' +
+          '<td class="col-op"><div class="row-ops"><button class="link-btn" data-cfg="' + u.id + '">配置角色</button><button class="link-btn danger" data-del="' + u.id + '">删除</button><button class="link-btn" data-login="' + u.id + '">登录</button></div></td>';
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('input[type=checkbox]').forEach(function (cb) { cb.onchange = function () { if (cb.checked) sel[cb.dataset.id] = true; else delete sel[cb.dataset.id]; updateSel(); }; });
+      tb.querySelectorAll('[data-cfg]').forEach(function (b) { b.onclick = function () { openCfg([b.getAttribute('data-cfg')]); }; });
+      tb.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { del(b.getAttribute('data-del')); }; });
+      tb.querySelectorAll('[data-login]').forEach(function (b) { b.onclick = function () { Shell.toast('以该用户身份登录(演示)'); }; });
+      document.getElementById('total').textContent = state.users.length;
+      document.getElementById('total2').textContent = list.length;
+      updateSel();
+    }
+    function updateSel() { document.getElementById('sel-n').textContent = Object.keys(sel).length; }
+
+    function del(id) {
+      id = Number(id);
+      var u = state.users.filter(function (x) { return x.id === id; })[0]; if (!u) return;
+      Shell.openModal({ title: '删除用户', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">确认删除用户 <b>' + esc(u.name) + '</b>?</p>',
+        actions: [ { text: '取消', onClick: Shell.closeModal }, { text: '确认删除', type: 'danger', onClick: function () {
+          state.users = state.users.filter(function (x) { return x.id !== id; }); window.SYS.save(state); Shell.closeModal(); Shell.toast('已删除', 'success'); render();
+        } } ] });
+    }
+
+    // 配置角色:绑定角色 → 实时预览该用户在本系统获得的权限
+    function openCfg(ids) {
+      ids = ids.map(Number);
+      var first = state.users.filter(function (x) { return x.id === ids[0]; })[0];
+      var who = ids.length > 1 ? ('已选 ' + ids.length + ' 名用户') : esc(first.name);
+      var opts = '<option value="">未分配权限</option>' + state.roles.map(function (r) { return '<option value="' + r.id + '" ' + (ids.length === 1 && first.roleId === r.id ? 'selected' : '') + '>' + esc(r.name) + '(' + r.scope + ')</option>'; }).join('');
+      Shell.openModal({
+        title: '配置角色 · ' + who, size: 'md',
+        body: '<div class="form-item"><div class="f-label">绑定角色 <span class="req">*</span></div><select class="field" id="cfg-role">' + opts + '</select></div>' +
+          '<div class="section-head" style="padding:12px 0 8px"><h3>权限预览</h3></div>' +
+          '<div id="cfg-preview" style="font-size:12px;color:var(--g-text-sub)"></div>' +
+          '<p class="f-tip" style="margin-top:10px;color:var(--g-text-weak)">ℹ 逻辑:用户绑定角色后,即在本系统获得该角色对应的权限范围与可见菜单。</p>',
+        actions: [ { text: '取消', onClick: Shell.closeModal }, { text: '确认绑定', type: 'primary', onClick: function () {
+          var rid = document.getElementById('cfg-role').value;
+          ids.forEach(function (id) { var u = state.users.filter(function (x) { return x.id === id; })[0]; if (u) u.roleId = rid; });
+          window.SYS.save(state); Shell.closeModal(); sel = {}; Shell.toast('已绑定角色,权限随之生效', 'success'); render();
+        } } ],
+        onOpen: function () {
+          var selEl = document.getElementById('cfg-role');
+          function preview() {
+            var r = window.SYS.roleById(state, selEl.value);
+            var box = document.getElementById('cfg-preview');
+            if (!r) { box.innerHTML = '<span class="tag neutral">无权限</span> 该用户将无任何系统权限。'; return; }
+            var titles = window.SYS.titleMap(state.menus);
+            var menuNames = r.scope === '全权限' ? ['全部菜单'] : (r.menus || []).map(function (m) { return titles[m] || m; });
+            box.innerHTML = '<div style="margin-bottom:6px">权限范围:<span class="perm-badge">' + r.scope + '</span></div>' +
+              '<div>可见菜单(' + (r.scope === '全权限' ? '全部' : menuNames.length) + '):' +
+              menuNames.map(function (n) { return '<span class="tag neutral" style="margin:2px 4px 2px 0">' + esc(n) + '</span>'; }).join('') + '</div>';
+          }
+          selEl.onchange = preview; preview();
+        }
+      });
+    }
+
+    document.getElementById('op-add').onclick = function () {
+      Shell.openModal({ title: '新增用户', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">真实环境用户来自统一身份认证(SSO)同步。此处为演示占位,可到各业务系统维护后同步。</p>',
+        actions: [{ text: '知道了', type: 'primary', onClick: Shell.closeModal }] });
+    };
+    document.getElementById('op-batch').onclick = function () {
+      var ids = Object.keys(sel); if (!ids.length) { Shell.toast('请先勾选用户', 'error'); return; }
+      openCfg(ids);
+    };
+    document.getElementById('check-all').onchange = function (e) { filtered().forEach(function (u) { if (e.target.checked) sel[u.id] = true; else delete sel[u.id]; }); render(); };
+    document.getElementById('f-go').onclick = function () { ff.name = document.getElementById('f-name').value.trim(); ff.acc = document.getElementById('f-acc').value; ff.emp = document.getElementById('f-emp').value; ff.role = document.getElementById('f-role').value; render(); };
+    document.getElementById('f-reset').onclick = function () { ['f-name'].forEach(function (id) { document.getElementById(id).value = ''; }); ['f-acc', 'f-emp', 'f-role'].forEach(function (id) { document.getElementById(id).value = ''; }); ff = { name: '', acc: '', emp: '', role: '' }; render(); };
+    render();
+  };
+  </script>
+</body>
+</html>

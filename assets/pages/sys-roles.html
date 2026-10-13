@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>角色管理 · 系统管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body data-page="sys-roles">
+  <template id="page-content">
+    <div class="panel">
+      <div class="filter-inline">
+        <div class="search-combo" style="max-width:360px">
+          <select id="f-field"><option value="name">角色名称</option><option value="code">角色值</option></select>
+          <input id="f-kw" placeholder="请输入关键字搜索角色">
+        </div>
+        <button class="btn" id="f-reset">重置</button>
+        <button class="btn primary" id="f-go">查询</button>
+      </div>
+      <div class="op-bar">
+        <div class="op-left"><button class="btn primary" id="op-add">+ 新增角色</button></div>
+        <div class="op-right"><span class="sel-count">共 <b id="total">0</b> 个角色</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th>角色名称</th><th>角色值</th><th>状态</th><th>权限范围</th><th>可见菜单</th><th>备注</th><th>创建时间</th><th class="col-op">操作</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/sys-data.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var state = window.SYS.load();
+    var kw = '', field = 'name';
+    var titles = window.SYS.titleMap(state.menus);
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+    function filtered() {
+      return state.roles.filter(function (r) { return !kw || String(r[field] || '').toLowerCase().indexOf(kw.toLowerCase()) >= 0; });
+    }
+
+    function render() {
+      var list = filtered();
+      var tb = document.getElementById('rows'); tb.innerHTML = '';
+      if (!list.length) tb.innerHTML = '<tr><td colspan="8"><div class="g-empty">没有符合条件的角色</div></td></tr>';
+      list.forEach(function (r) {
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td style="font-weight:600">' + esc(r.name) + '</td>' +
+          '<td><span class="tag neutral">' + esc(r.code) + '</span></td>' +
+          '<td><span class="tag ' + (r.status === '启用' ? 'success' : 'error') + '">' + r.status + '</span></td>' +
+          '<td>' + r.scope + '</td>' +
+          '<td>' + (r.scope === '全权限' ? '全部' : (r.menus || []).length + ' 项') + '</td>' +
+          '<td class="ellipsis" title="' + esc(r.remark) + '">' + esc(r.remark || '-') + '</td>' +
+          '<td style="color:var(--g-text-weak)">' + (r.created || '-') + '</td>' +
+          '<td class="col-op"><div class="row-ops"><button class="link-btn" data-edit="' + r.id + '">修改</button><button class="link-btn danger" data-del="' + r.id + '">删除</button></div></td>';
+        tb.appendChild(tr);
+      });
+      tb.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openEdit(b.getAttribute('data-edit')); }; });
+      tb.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { del(b.getAttribute('data-del')); }; });
+      document.getElementById('total').textContent = state.roles.length;
+    }
+
+    function del(id) {
+      var r = state.roles.filter(function (x) { return x.id === id; })[0]; if (!r) return;
+      Shell.openModal({ title: '删除角色', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">确认删除角色 <b>' + esc(r.name) + '</b>?绑定该角色的用户将变为无权限。</p>',
+        actions: [ { text: '取消', onClick: Shell.closeModal },
+          { text: '确认删除', type: 'danger', onClick: function () {
+            state.roles = state.roles.filter(function (x) { return x.id !== id; });
+            window.SYS.save(state); Shell.closeModal(); Shell.toast('已删除', 'success'); render();
+          } } ] });
+    }
+
+    // 权限树:目录(全选) + 菜单叶子;工具 展开/折叠、全选/全不选
+    function permTreeHtml(checkedIds) {
+      var set = {}; (checkedIds || []).forEach(function (id) { set[id] = true; });
+      var html = '<div class="perm-tools">' +
+        '<label><input type="checkbox" id="pt-expand" checked> 展开/折叠</label>' +
+        '<label><input type="checkbox" id="pt-all"> 全选/全不选</label></div><div class="perm-tree" id="pt-tree">';
+      state.menus.forEach(function (m) {
+        var kids = m.children || [];
+        var leafIds = kids.length ? kids.map(function (c) { return c.id; }) : [m.id];
+        var allChecked = leafIds.every(function (id) { return set[id]; });
+        html += '<div class="perm-group" data-group="' + m.id + '">' +
+          '<div class="pg-head"><span class="tree-caret" data-caret="' + m.id + '">▾</span>' +
+          '<label><input type="checkbox" class="pg-check" data-group-check="' + m.id + '" ' + (allChecked ? 'checked' : '') + '> ' + esc(m.title) + '</label></div>' +
+          '<div class="perm-children" data-children="' + m.id + '">';
+        if (kids.length) kids.forEach(function (c) {
+          html += '<label class="perm-leaf"><input type="checkbox" class="leaf-check" data-leaf="' + c.id + '" data-of="' + m.id + '" ' + (set[c.id] ? 'checked' : '') + '> ' + esc(c.title) + '</label>';
+        }); else html += '<label class="perm-leaf"><input type="checkbox" class="leaf-check" data-leaf="' + m.id + '" data-of="' + m.id + '" ' + (set[m.id] ? 'checked' : '') + '> (本目录)</label>';
+        html += '</div></div>';
+      });
+      return html + '</div>';
+    }
+
+    function bindPermTree(root) {
+      // 目录勾选 → 子级联动
+      root.querySelectorAll('.pg-check').forEach(function (gc) {
+        gc.onchange = function () {
+          root.querySelectorAll('.leaf-check[data-of="' + gc.getAttribute('data-group-check') + '"]').forEach(function (lc) { lc.checked = gc.checked; });
+        };
+      });
+      // 子级勾选 → 回写目录态
+      root.querySelectorAll('.leaf-check').forEach(function (lc) {
+        lc.onchange = function () {
+          var of = lc.getAttribute('data-of');
+          var leaves = root.querySelectorAll('.leaf-check[data-of="' + of + '"]');
+          var all = true; leaves.forEach(function (x) { if (!x.checked) all = false; });
+          var gc = root.querySelector('.pg-check[data-group-check="' + of + '"]'); if (gc) gc.checked = all;
+        };
+      });
+      // 展开/折叠
+      root.querySelectorAll('[data-caret]').forEach(function (ca) {
+        ca.onclick = function () {
+          var box = root.querySelector('[data-children="' + ca.getAttribute('data-caret') + '"]');
+          var collapsed = ca.classList.toggle('collapsed'); box.style.display = collapsed ? 'none' : '';
+        };
+      });
+      var expand = root.querySelector('#pt-expand');
+      if (expand) expand.onchange = function () {
+        root.querySelectorAll('[data-caret]').forEach(function (ca) {
+          var box = root.querySelector('[data-children="' + ca.getAttribute('data-caret') + '"]');
+          if (expand.checked) { ca.classList.remove('collapsed'); box.style.display = ''; }
+          else { ca.classList.add('collapsed'); box.style.display = 'none'; }
+        });
+      };
+      var all = root.querySelector('#pt-all');
+      if (all) all.onchange = function () {
+        root.querySelectorAll('.leaf-check,.pg-check').forEach(function (x) { x.checked = all.checked; });
+      };
+    }
+
+    function openEdit(id) {
+      var r = id ? state.roles.filter(function (x) { return x.id === id; })[0] : null;
+      var isNew = !r;
+      r = r || { id: '', name: '', code: '', status: '启用', scope: '部门权限', menus: [], remark: '' };
+      Shell.openModal({
+        title: isNew ? '新增角色' : '编辑角色', size: 'lg',
+        body: '<form id="role-form" class="form-grid" style="--form-cols:2">' +
+          '<div class="form-item"><div class="f-label">角色名称 <span class="req">*</span></div><input class="field" id="r-name" value="' + esc(r.name) + '"><div class="f-tip" id="tip-name"></div></div>' +
+          '<div class="form-item"><div class="f-label">角色值 <span class="req">*</span></div><input class="field" id="r-code" value="' + esc(r.code) + '"><div class="f-tip" id="tip-code"></div></div>' +
+          '<div class="form-item"><div class="f-label">状态</div><div class="radio-row"><label><input type="radio" name="r-status" value="停用" ' + (r.status === '停用' ? 'checked' : '') + '> 停用</label><label><input type="radio" name="r-status" value="启用" ' + (r.status !== '停用' ? 'checked' : '') + '> 启用</label></div></div>' +
+          '<div class="form-item wide"><div class="f-label">备注</div><input class="field" id="r-remark" value="' + esc(r.remark) + '"></div>' +
+          '<div class="form-item wide"><div class="f-label">权限控制</div><div class="radio-row" id="r-scope">' +
+            window.SYS.SCOPES.map(function (s) { return '<label><input type="radio" name="r-scope" value="' + s + '" ' + (r.scope === s ? 'checked' : '') + '> ' + s + '</label>'; }).join('') + '</div></div>' +
+          '<div class="form-item wide"><div class="f-label">权限(菜单) <span class="hint">根据系统决定有哪些</span></div>' + permTreeHtml(r.menus) + '</div>' +
+        '</form>',
+        actions: [ { text: '取消', onClick: Shell.closeModal },
+          { text: '确认', type: 'primary', onClick: function () { saveRole(isNew, r); } } ],
+        onOpen: function (body) { bindPermTree(body.querySelector('#pt-tree').parentNode); }
+      });
+    }
+
+    function saveRole(isNew, base) {
+      var name = document.getElementById('r-name').value.trim();
+      var code = document.getElementById('r-code').value.trim();
+      document.querySelectorAll('#role-form .form-item').forEach(function (fi) { fi.classList.remove('error'); });
+      var ok = true;
+      if (!name) { mark('r-name', 'tip-name', '请输入角色名称'); ok = false; }
+      if (!code) { mark('r-code', 'tip-code', '请输入角色值'); ok = false; }
+      if (!ok) return;
+      var status = (document.querySelector('input[name=r-status]:checked') || {}).value || '启用';
+      var scope = (document.querySelector('input[name=r-scope]:checked') || {}).value || '部门权限';
+      var menus = [];
+      document.querySelectorAll('.leaf-check:checked').forEach(function (lc) { menus.push(lc.getAttribute('data-leaf')); });
+      if (scope === '全权限') menus = window.SYS.leaves(state.menus);
+      if (scope === '无权限') menus = [];
+      if (isNew) {
+        var newId = (code || 'role') + '_' + Date.now().toString(36);
+        state.roles.unshift({ id: newId, name: name, code: code, status: status, scope: scope, menus: menus, remark: document.getElementById('r-remark').value.trim(), created: nowStr() });
+      } else {
+        base.name = name; base.code = code; base.status = status; base.scope = scope; base.menus = menus; base.remark = document.getElementById('r-remark').value.trim();
+      }
+      window.SYS.save(state); Shell.closeModal(); Shell.toast(isNew ? '角色已新增' : '角色已保存', 'success'); render();
+    }
+    function mark(inputId, tipId, msg) { document.getElementById(inputId).closest('.form-item').classList.add('error'); document.getElementById(tipId).textContent = msg; }
+    function nowStr() { var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); }
+
+    document.getElementById('op-add').onclick = function () { openEdit(null); };
+    document.getElementById('f-go').onclick = function () { field = document.getElementById('f-field').value; kw = document.getElementById('f-kw').value.trim(); render(); };
+    document.getElementById('f-kw').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('f-go').click(); });
+    document.getElementById('f-reset').onclick = function () { document.getElementById('f-kw').value = ''; kw = ''; render(); };
+    render();
+  };
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>菜单管理 · 系统管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body data-page="sys-menus">
+  <template id="page-content">
+    <div class="panel">
+      <div class="op-bar">
+        <div class="op-left"><button class="btn primary" id="op-add">+ 新增菜单</button><button class="btn" id="op-expand">展开/折叠全部</button></div>
+        <div class="op-right"><span class="sel-count">菜单来自本系统导航,可增删改(演示)</span></div>
+      </div>
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th>标题</th><th>类型</th><th class="num">排序</th><th>路由地址</th><th>路由组件</th><th>状态</th><th class="col-op">操作</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/sys-data.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var state = window.SYS.load();
+    var collapsed = {}; // 目录 id -> true 表示折叠
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+    function render() {
+      var tb = document.getElementById('rows'); tb.innerHTML = '';
+      state.menus.sort(function (a, b) { return a.order - b.order; });
+      state.menus.forEach(function (m) {
+        tb.appendChild(rowEl(m, 0, true));
+        if (!collapsed[m.id]) (m.children || []).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (c) {
+          tb.appendChild(rowEl(c, 1, false, m.id));
+        });
+      });
+      bind();
+    }
+
+    function rowEl(node, depth, isDir, parentId) {
+      var tr = document.createElement('tr');
+      var hasChildren = node.children && node.children.length;
+      var caret = isDir && hasChildren
+        ? '<span class="menu-caret ' + (collapsed[node.id] ? 'collapsed' : '') + '" data-caret="' + node.id + '"><svg viewBox="0 0 24 24" width="12" height="12"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></span>'
+        : '<span class="menu-caret leaf"></span>';
+      tr.innerHTML =
+        '<td style="font-weight:' + (isDir ? '600' : '400') + '"><span style="display:inline-block;width:' + (depth * 20) + 'px"></span>' + caret + ' ' + esc(node.title) + '</td>' +
+        '<td><span class="tag ' + (node.type === '目录' ? 'info' : 'neutral') + '">' + node.type + '</span></td>' +
+        '<td class="num">' + node.order + '</td>' +
+        '<td style="color:var(--g-text-sub)">' + esc(node.path || '-') + '</td>' +
+        '<td style="color:var(--g-text-weak)">' + esc(node.component || '-') + '</td>' +
+        '<td><span class="tag ' + (node.status === '启用' ? 'success' : 'error') + '">' + node.status + '</span></td>' +
+        '<td class="col-op"><div class="row-ops">' +
+          (isDir ? '<button class="link-btn" data-addsub="' + node.id + '">新增下级</button>' : '') +
+          '<button class="link-btn" data-edit="' + node.id + '" data-parent="' + (parentId || '') + '">编辑</button>' +
+          '<button class="link-btn danger" data-del="' + node.id + '" data-parent="' + (parentId || '') + '">删除</button>' +
+        '</div></td>';
+      return tr;
+    }
+
+    function bind() {
+      var tb = document.getElementById('rows');
+      tb.querySelectorAll('[data-caret]').forEach(function (c) { c.onclick = function () { var id = c.getAttribute('data-caret'); collapsed[id] = !collapsed[id]; render(); }; });
+      tb.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openEdit(b.getAttribute('data-edit'), b.getAttribute('data-parent')); }; });
+      tb.querySelectorAll('[data-del]').forEach(function (b) { b.onclick = function () { del(b.getAttribute('data-del'), b.getAttribute('data-parent')); }; });
+      tb.querySelectorAll('[data-addsub]').forEach(function (b) { b.onclick = function () { openEdit(null, b.getAttribute('data-addsub')); }; });
+    }
+
+    function findNode(id, parentId) {
+      if (parentId) { var p = state.menus.filter(function (m) { return m.id === parentId; })[0]; return p ? (p.children || []).filter(function (c) { return c.id === id; })[0] : null; }
+      return state.menus.filter(function (m) { return m.id === id; })[0];
+    }
+
+    function del(id, parentId) {
+      var node = findNode(id, parentId); if (!node) return;
+      Shell.openModal({ title: '删除菜单', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">确认删除菜单 <b>' + esc(node.title) + '</b>' + (node.children && node.children.length ? ' 及其下级' : '') + '?</p>',
+        actions: [ { text: '取消', onClick: Shell.closeModal }, { text: '确认删除', type: 'danger', onClick: function () {
+          if (parentId) { var p = state.menus.filter(function (m) { return m.id === parentId; })[0]; p.children = (p.children || []).filter(function (c) { return c.id !== id; }); }
+          else state.menus = state.menus.filter(function (m) { return m.id !== id; });
+          window.SYS.save(state); Shell.closeModal(); Shell.toast('已删除', 'success'); render();
+        } } ] });
+    }
+
+    function openEdit(id, parentId) {
+      var node = id ? findNode(id, parentId) : null;
+      var isNew = !node;
+      var addingSub = isNew && parentId; // 新增下级
+      node = node || { id: '', title: '', type: addingSub ? '菜单' : '目录', order: 1, path: '', component: addingSub ? 'View' : 'LAYOUT', status: '启用' };
+      Shell.openModal({
+        title: isNew ? (addingSub ? '新增下级菜单' : '新增菜单') : '编辑菜单', size: 'md',
+        body: '<form id="m-form" class="form-grid" style="--form-cols:2">' +
+          '<div class="form-item"><div class="f-label">标题 <span class="req">*</span></div><input class="field" id="m-title" value="' + esc(node.title) + '"><div class="f-tip" id="tip-title"></div></div>' +
+          '<div class="form-item"><div class="f-label">类型</div><div class="radio-row"><label><input type="radio" name="m-type" value="目录" ' + (node.type === '目录' ? 'checked' : '') + '> 目录</label><label><input type="radio" name="m-type" value="菜单" ' + (node.type !== '目录' ? 'checked' : '') + '> 菜单</label></div></div>' +
+          '<div class="form-item"><div class="f-label">排序</div><input type="number" class="field" id="m-order" value="' + node.order + '"></div>' +
+          '<div class="form-item"><div class="f-label">状态</div><div class="radio-row"><label><input type="radio" name="m-status" value="停用" ' + (node.status === '停用' ? 'checked' : '') + '> 停用</label><label><input type="radio" name="m-status" value="启用" ' + (node.status !== '停用' ? 'checked' : '') + '> 启用</label></div></div>' +
+          '<div class="form-item"><div class="f-label">路由地址</div><input class="field" id="m-path" value="' + esc(node.path) + '" placeholder="/example"></div>' +
+          '<div class="form-item"><div class="f-label">路由组件</div><input class="field" id="m-comp" value="' + esc(node.component) + '" placeholder="LAYOUT / View"></div>' +
+        '</form>',
+        actions: [ { text: '取消', onClick: Shell.closeModal }, { text: '确认', type: 'primary', onClick: function () {
+          var title = document.getElementById('m-title').value.trim();
+          document.querySelectorAll('#m-form .form-item').forEach(function (fi) { fi.classList.remove('error'); });
+          if (!title) { document.getElementById('m-title').closest('.form-item').classList.add('error'); document.getElementById('tip-title').textContent = '请输入标题'; return; }
+          var patch = {
+            title: title,
+            type: (document.querySelector('input[name=m-type]:checked') || {}).value || '菜单',
+            order: Number(document.getElementById('m-order').value) || 1,
+            status: (document.querySelector('input[name=m-status]:checked') || {}).value || '启用',
+            path: document.getElementById('m-path').value.trim(),
+            component: document.getElementById('m-comp').value.trim()
+          };
+          if (isNew) {
+            var newId = 'menu_' + Date.now().toString(36);
+            if (addingSub) { var p = state.menus.filter(function (m) { return m.id === parentId; })[0]; p.children = p.children || []; p.children.push(Object.assign({ id: newId }, patch)); }
+            else state.menus.push(Object.assign({ id: newId, children: [] }, patch));
+          } else { for (var k in patch) node[k] = patch[k]; }
+          window.SYS.save(state); Shell.closeModal(); Shell.toast(isNew ? '菜单已新增' : '菜单已保存', 'success'); render();
+        } } ]
+      });
+    }
+
+    document.getElementById('op-add').onclick = function () { openEdit(null, null); };
+    document.getElementById('op-expand').onclick = function () {
+      var anyOpen = state.menus.some(function (m) { return !collapsed[m.id] && m.children && m.children.length; });
+      state.menus.forEach(function (m) { collapsed[m.id] = anyOpen; });
+      render();
+    };
+    render();
+  };
+  </script>
+</body>
+</html>
