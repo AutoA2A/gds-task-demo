@@ -1,0 +1,13 @@
+{
+  "skill": "george-ui-v3",
+  "owner": "AutoA2A",
+  "repo": "gds-task-demo",
+  "url": "https://autoa2a.github.io/gds-task-demo/",
+  "commit": "d6d899ad6c28625e0ce5a61be9b50cf7ca03b874",
+  "verified": true,
+  "checked": [
+    "https://autoa2a.github.io/gds-task-demo/",
+    "https://autoa2a.github.io/gds-task-demo/assets/css/tokens.css"
+  ],
+  "time": "2026-10-13T08:43:40Z"
+}
