@@ -1,0 +1,111 @@
+/* ============================================================
+ * George-UI-V3 外壳布局 (Shell)
+ * 对应 Figma「布局说明」810:11928 (R063~R083)
+ * 顶部操作区 52 / 一级导航 74 / 二级导航 100(可收起 0) / 内容区满宽
+ * 关键:内容区自适应满宽左对齐,与导航、页面右侧各留 12px (R077,R082)
+ * ============================================================ */
+
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  font-family: var(--g-font);
+  font-size: var(--g-fs-12);
+  line-height: var(--g-lh-body);
+  color: var(--g-text);
+  background: var(--g-bg);
+}
+
+.sys-shell { position: fixed; inset: 0; overflow: hidden; isolation: isolate; }
+
+/* ---------- 顶部操作区 (R065,R078:常驻固定,不随内容滚动) ---------- */
+.sys-top {
+  position: absolute; inset: 0 0 auto; height: var(--g-top-h);
+  display: flex; align-items: center; gap: var(--g-space-12);
+  padding: 0 var(--g-space-12);
+  background: var(--g-surface);
+  border-bottom: 1px solid var(--g-border);
+  z-index: 30;
+}
+.sys-brand {
+  flex: none; display: flex; align-items: center; gap: var(--g-space-8);
+  font-size: var(--g-fs-14); font-weight: var(--g-fw-bold); white-space: nowrap; padding-right: 4px;
+}
+.sys-brand .logo {
+  width: 24px; height: 24px; border-radius: 50%; flex: none;
+  background: var(--g-brand); color: #1b3300;
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+}
+/* 工作页签:已打开页面,可关闭(真实系统) */
+.sys-worktabs { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 0; overflow: hidden; }
+.sys-worktab { height: 26px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; border-radius: var(--g-radius-4); background: var(--g-bg-soft); color: var(--g-text-sub); font-size: var(--g-fs-12); white-space: nowrap; cursor: pointer; }
+.sys-worktab.active { background: var(--g-brand-gray); color: var(--g-text); }
+.sys-worktab .x { color: var(--g-text-weak); font-size: 12px; }
+.sys-worktab .x:hover { color: var(--g-error); }
+.sys-tools { display: flex; align-items: center; gap: 6px; flex: none; }
+.sys-tenant { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: var(--g-radius-4); background: var(--g-brand-pale); color: var(--g-brand-dark); font-size: var(--g-fs-12); }
+.sys-icon-btn {
+  height: 28px; width: 28px; flex: none;
+  border: 1px solid transparent; background: transparent; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--g-text-sub);
+}
+.sys-icon-btn:hover { background: var(--g-fill-hover); color: var(--g-text); }
+.sys-icon-btn svg { width: 16px; height: 16px; }
+.sys-identity {
+  height: 28px; padding: 0 8px 0 4px; display: inline-flex; align-items: center; gap: 6px;
+  border-radius: 14px; background: var(--g-bg-soft);
+  cursor: pointer; font-size: var(--g-fs-12); color: var(--g-text);
+}
+.sys-identity .avatar { width: 22px; height: 22px; border-radius: 50%; background: var(--g-brand-light); display:flex; align-items:center; justify-content:center; font-size:10px; color:#1b3300; }
+
+/* ---------- 一级导航 (R070~R074:常驻左侧,铺满一屏) ---------- */
+.sys-primary {
+  position: absolute; left: 0; top: var(--g-top-h); bottom: 0; width: var(--g-primary-w);
+  display: flex; flex-direction: column; border-right: 1px solid var(--g-border);
+  background: var(--g-surface); z-index: 20;
+}
+.sys-primary-items { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; gap: var(--g-space-4); padding: var(--g-space-8); scrollbar-width: none; }
+.sys-primary-items::-webkit-scrollbar { display: none; }
+.sys-primary-item {
+  min-height: 58px; padding: 8px 2px; border: 0; border-radius: var(--g-radius-8); background: transparent;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  font-size: var(--g-fs-10); line-height: 1.1; color: var(--g-text-sub); cursor: pointer; text-decoration: none; text-align: center;
+}
+.sys-primary-item svg { width: 20px; height: 20px; }
+.sys-primary-item:hover { background: var(--g-fill-hover); }
+.sys-primary-item.active { background: var(--g-brand-gray); color: var(--g-primary); font-weight: var(--g-fw-bold); }
+.sys-env { margin: var(--g-space-8); padding: 4px 0; border-radius: var(--g-radius-4); background: var(--g-bg-soft); color: var(--g-text-weak); text-align: center; font-size: var(--g-fs-10); flex: none; }
+
+/* ---------- 二/三级导航 (R075,R076:无下级则不显示;收起宽度归零) ---------- */
+.sys-secondary {
+  position: absolute; left: var(--g-primary-w); top: var(--g-top-h); bottom: 0; width: var(--g-secondary-w);
+  overflow: auto; padding: 0 var(--g-space-12); border-right: 1px solid var(--g-border-soft);
+  background: var(--g-surface); z-index: 20; scrollbar-width: thin;
+}
+.sys-secondary h2 { font-size: var(--g-fs-14); margin: 16px 0 12px; font-weight: var(--g-fw-bold); }
+.sys-group { border-bottom: 1px solid var(--g-border-soft); padding-bottom: 8px; margin-bottom: 8px; }
+.sys-group > .g-title { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 8px 0; font-size: var(--g-fs-14); font-weight: var(--g-fw-bold); }
+.sys-leaf { display: block; width: 100%; text-align: left; padding: 8px; border: 0; border-radius: var(--g-radius-4); background: none; font-size: var(--g-fs-12); color: var(--g-text-sub); margin-bottom: 4px; cursor: pointer; text-decoration: none; }
+.sys-leaf:hover { background: var(--g-fill-hover); }
+.sys-leaf.active { background: var(--g-brand-gray); color: var(--g-text); font-weight: var(--g-fw-bold); }
+
+/* 收起态:二级导航宽度归零,内容区立即补齐释放空间,不留空白 (R076) */
+.sys-shell[data-secondary='collapsed'], .sys-shell[data-secondary='none'] { --g-secondary-w: 0px; }
+.sys-shell[data-secondary='collapsed'] .sys-secondary,
+.sys-shell[data-secondary='none'] .sys-secondary { width: 0; padding: 0; border: 0; visibility: hidden; }
+
+/* ---------- 内容区:满宽左对齐铺开 (R077,R078,R082) ---------- */
+.sys-content {
+  position: absolute; top: var(--g-top-h);
+  left: calc(var(--g-primary-w) + var(--g-secondary-w) + var(--g-shell-gap));
+  right: var(--g-shell-gap); bottom: 0;
+  padding: var(--g-space-12) 0 var(--g-space-12) 0;
+  overflow: auto; overscroll-behavior: contain; z-index: 1;
+  container-type: inline-size;
+}
+/* 页面主体:铺满内容区宽度,从左到右展开,不设 max-width、不居中 */
+.sys-page { width: 100%; min-height: 100%; display: flow-root; }
+
+/* ---------- 浮层:抽屉/弹窗挂最高层,避免被内容区裁切 (R081) ---------- */
+.sys-overlay { position: fixed; inset: 0; z-index: 100; display: none; }
+.sys-overlay.open { display: block; }
+.sys-overlay .mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }

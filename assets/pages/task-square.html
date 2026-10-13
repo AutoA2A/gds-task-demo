@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>任务广场 · GDS 任务管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body data-page="task-square">
+  <template id="page-content">
+    <div class="panel">
+      <!-- 页签 + 审核模式指示 -->
+      <div class="list-head">
+        <div class="list-tabs" id="tabs"></div>
+        <div style="display:flex;align-items:center;gap:10px;flex:none">
+          <span id="review-ind" style="font-size:12px;color:var(--g-text-sub);white-space:nowrap"></span>
+          <button class="icon-btn" title="高级筛选" id="btn-filter"><svg viewBox="0 0 24 24"><path d="M3 5h18l-7 8v5l-4 2v-7z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+
+      <!-- 一体式搜索 -->
+      <div class="filter-inline">
+        <div class="search-combo">
+          <select id="f-field">
+            <option value="all">全部字段</option>
+            <option value="task_no">项目编号</option>
+            <option value="design_no">设计单号</option>
+            <option value="project_name">项目名</option>
+            <option value="customer_name">客户名</option>
+          </select>
+          <input id="f-kw" placeholder="输入关键字查询(项目编号/设计单号/项目名/客户)…">
+        </div>
+        <select class="field" id="f-urg" style="width:120px;flex:none"><option value="">全部紧急度</option><option>加急</option><option>紧急</option><option>普通</option></select>
+        <button class="btn" id="f-reset">重置</button>
+        <button class="btn primary" id="f-go">查询</button>
+      </div>
+
+      <!-- 操作工具栏 -->
+      <div class="op-bar">
+        <div class="op-left">
+          <button class="btn primary" id="op-new">+ 新单订单</button>
+          <button class="btn" id="op-batch">批量分单 <span class="caret">▾</span></button>
+          <button class="btn" id="op-export">导出</button>
+        </div>
+        <div class="op-right">
+          <span class="sel-count">已选 <b id="sel-n">0</b> 项</span>
+          <button class="icon-btn" title="列设置" id="op-cols"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.4"/></svg></button>
+        </div>
+      </div>
+
+      <!-- 任务表格(8 列) -->
+      <div class="table-wrap">
+        <table class="g-table">
+          <thead><tr>
+            <th class="col-check"><input type="checkbox" id="check-all"></th>
+            <th class="col-idx">序号</th>
+            <th>项目编号</th>
+            <th>设计单号</th>
+            <th>项目 / 客户</th>
+            <th>紧急度</th>
+            <th class="num">赏金(WF)</th>
+            <th>状态</th>
+            <th class="col-op">操作</th>
+          </tr></thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+
+      <!-- 分页 + 统计 -->
+      <div class="list-foot">
+        <div class="list-stats" id="stats">共 <b>0</b> 条</div>
+        <div class="foot-right">
+          <select class="page-size" id="page-size"><option value="10">10 条/页</option><option value="20">20 条/页</option></select>
+          <div class="pager" id="pager"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/gds-ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var D = window.DEMO_DATA, U = window.GDS_UI;
+    var state = { tab: 'all', field: 'all', kw: '', urg: '', page: 1, size: 10, sel: {} };
+
+    // 执行人员进入广场 → 引导到我的任务(PRD 异常场景)
+    if (Shell.currentIdentity().role === '执行人员') {
+      Shell.openModal({
+        title: '提示', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">任务广场面向分单管理员。执行人员请使用「我的任务」查看分配给自己的任务。</p>',
+        actions: [
+          { text: '留在本页', onClick: Shell.closeModal },
+          { text: '前往我的任务', type: 'primary', onClick: function () { location.href = 'my-tasks.html'; } }
+        ]
+      });
+    }
+
+    function statusTabs() {
+      return window.GDS.reviewOn()
+        ? ['全部', '待分派', '已分派', '待审核', '已完成']
+        : ['全部', '待分派', '已分派', '待推送', '已完成'];
+    }
+    function allTasks() { return window.GDS.load(); }
+
+    function matchTab(t) {
+      if (state.tab === 'all' || state.tab === '全部') return true;
+      return t.status === state.tab;
+    }
+    function filtered() {
+      return allTasks().filter(function (t) {
+        if (!matchTab(t)) return false;
+        if (state.urg && t.urgency !== state.urg) return false;
+        if (state.kw) {
+          var k = state.kw.toLowerCase();
+          if (state.field === 'all') {
+            var hay = [t.task_no, t.design_no, t.project_name, t.customer_name].join(' ').toLowerCase();
+            if (hay.indexOf(k) < 0) return false;
+          } else if (String(t[state.field] || '').toLowerCase().indexOf(k) < 0) return false;
+        }
+        return true;
+      }).sort(function (a, b) {
+        var r = D.urgencyRank[a.urgency] - D.urgencyRank[b.urgency];
+        return r !== 0 ? r : a.task_id.localeCompare(b.task_id);
+      });
+    }
+
+    function renderTabs() {
+      var box = document.getElementById('tabs'); box.innerHTML = '';
+      var all = allTasks();
+      statusTabs().forEach(function (name) {
+        var key = name === '全部' ? 'all' : name;
+        var n = key === 'all' ? all.length : all.filter(function (t) { return t.status === name; }).length;
+        var b = document.createElement('button');
+        b.className = 'list-tab' + (state.tab === key ? ' active' : '');
+        b.innerHTML = name + ' <span class="count">' + n + '</span>';
+        b.onclick = function () { state.tab = key; state.page = 1; state.sel = {}; render(); };
+        box.appendChild(b);
+      });
+      // 若当前 tab 因审核开关切换而消失,回落到全部
+      if (statusTabs().indexOf(state.tab === 'all' ? '全部' : state.tab) < 0) state.tab = 'all';
+    }
+
+    function renderReviewInd() {
+      var on = window.GDS.reviewOn();
+      document.getElementById('review-ind').innerHTML =
+        '<span style="color:' + (on ? 'var(--g-success)' : 'var(--g-neutral)') + '">●</span> 审核模式:' +
+        (on ? '已开启' : '已关闭') + ' <button class="link-btn" id="review-toggle">切换</button>';
+      document.getElementById('review-toggle').onclick = function () {
+        window.GDS.setReview(!on);
+        Shell.toast('审核模式已' + (!on ? '开启' : '关闭'));
+        render();
+      };
+    }
+
+    function opButtons(t) {
+      var btns = ['<a class="link-btn" href="review.html?id=' + t.task_id + '">查看</a>'];
+      if (t.status === '待分派') {
+        btns.push('<a class="link-btn" href="assignment.html?mode=edit&id=' + t.task_id + '">编辑</a>');
+        btns.push('<a class="link-btn" href="assignment.html?mode=new&id=' + t.task_id + '" style="font-weight:600">分单</a>');
+      } else if (t.status === '待审核') {
+        btns.push('<button class="link-btn" data-review="' + t.task_id + '" style="font-weight:600">审核</button>');
+      } else if (t.status === '待推送') {
+        btns.push('<button class="link-btn" data-push="' + t.task_id + '" style="font-weight:600">推送CRM</button>');
+      }
+      return '<div class="row-ops">' + btns.join('') + '</div>';
+    }
+
+    function render() {
+      renderReviewInd();
+      renderTabs();
+      var list = filtered();
+      var pages = Math.max(1, Math.ceil(list.length / state.size));
+      if (state.page > pages) state.page = pages;
+      var start = (state.page - 1) * state.size;
+      var rows = list.slice(start, start + state.size);
+      var tb = document.getElementById('rows'); tb.innerHTML = '';
+      if (!rows.length) { tb.innerHTML = '<tr><td colspan="9"><div class="g-empty">没有符合条件的任务</div></td></tr>'; }
+      rows.forEach(function (t) {
+        var canSelect = t.status === '待分派';
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+          '<td class="col-check">' + (canSelect ? '<input type="checkbox" data-id="' + t.task_id + '" ' + (state.sel[t.task_id] ? 'checked' : '') + '>' : '') + '</td>' +
+          '<td class="col-idx">' + t.task_id.replace('T', '') + '</td>' +
+          '<td>' + t.task_no + '</td>' +
+          '<td>' + t.design_no + '</td>' +
+          '<td class="ellipsis" title="' + U.esc(t.project_name) + '"><div>' + U.esc(t.project_name) + ' <span class="tag neutral" style="height:16px">' + t.source + '</span></div><div style="color:var(--g-text-weak);font-size:11px">' + U.esc(t.customer_name || '-') + ' · ' + t.region + '</div></td>' +
+          '<td><span class="tag dot ' + (D.urgencyTag[t.urgency] || 'neutral') + '">' + t.urgency + '</span></td>' +
+          '<td class="num" style="color:var(--g-warning);font-weight:600">' + t.reward.toFixed(1) + '</td>' +
+          '<td><span class="tag ' + (D.statusTag[t.status] || 'neutral') + '">' + t.status + '</span></td>' +
+          '<td class="col-op">' + opButtons(t) + '</td>';
+        tb.appendChild(tr);
+      });
+      // 绑定行内事件
+      tb.querySelectorAll('input[type=checkbox]').forEach(function (cb) {
+        cb.onchange = function () { if (cb.checked) state.sel[cb.dataset.id] = true; else delete state.sel[cb.dataset.id]; updateSel(); };
+      });
+      tb.querySelectorAll('[data-review]').forEach(function (b) { b.onclick = function () { U.openReview(Shell, window.GDS.get(b.getAttribute('data-review')), render); }; });
+      tb.querySelectorAll('[data-push]').forEach(function (b) { b.onclick = function () { U.confirmPush(Shell, window.GDS.get(b.getAttribute('data-push')), render, false); }; });
+
+      // 统计
+      var urgent = list.filter(function (t) { return t.urgency === '紧急'; }).length;
+      var rush = list.filter(function (t) { return t.urgency === '加急'; }).length;
+      var reward = list.reduce(function (s, t) { return s + t.reward; }, 0);
+      document.getElementById('stats').innerHTML = '共 <b>' + list.length + '</b> 条 · 紧急 ' + urgent + ' · 加急 ' + rush + ' · 赏金合计 <b>' + reward.toFixed(1) + '</b> WF';
+      renderPager(pages);
+      updateSel();
+    }
+
+    function renderPager(pages) {
+      var box = document.getElementById('pager'); box.innerHTML = '';
+      function pg(label, page, disabled, active) {
+        var b = document.createElement('button'); b.className = 'pg' + (active ? ' active' : ''); b.textContent = label; b.disabled = disabled;
+        b.onclick = function () { state.page = page; render(); }; box.appendChild(b);
+      }
+      pg('|‹', 1, state.page <= 1); pg('‹', state.page - 1, state.page <= 1);
+      for (var i = 1; i <= pages; i++) pg(i, i, false, i === state.page);
+      pg('›', state.page + 1, state.page >= pages); pg('›|', pages, state.page >= pages);
+    }
+    function updateSel() { document.getElementById('sel-n').textContent = Object.keys(state.sel).length; }
+
+    // 搜索 / 重置
+    document.getElementById('f-go').onclick = function () {
+      state.field = document.getElementById('f-field').value;
+      state.kw = document.getElementById('f-kw').value.trim();
+      state.urg = document.getElementById('f-urg').value; state.page = 1; render();
+    };
+    document.getElementById('f-kw').addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('f-go').click(); });
+    document.getElementById('f-reset').onclick = function () {
+      document.getElementById('f-kw').value = ''; document.getElementById('f-field').value = 'all'; document.getElementById('f-urg').value = '';
+      state.field = 'all'; state.kw = ''; state.urg = ''; state.page = 1; render();
+    };
+    document.getElementById('page-size').onchange = function (e) { state.size = parseInt(e.target.value, 10); state.page = 1; render(); };
+    document.getElementById('check-all').onchange = function (e) {
+      filtered().filter(function (t) { return t.status === '待分派'; }).slice((state.page - 1) * state.size, state.page * state.size)
+        .forEach(function (t) { if (e.target.checked) state.sel[t.task_id] = true; else delete state.sel[t.task_id]; });
+      render();
+    };
+
+    // 工具栏
+    document.getElementById('op-new').onclick = function () {
+      Shell.openModal({ title: '新单订单', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">真实场景中,任务由 CRM 自动派单进入 GDS。此入口为应急手动补单通道(演示占位)。</p>',
+        actions: [{ text: '知道了', type: 'primary', onClick: Shell.closeModal }] });
+    };
+    document.getElementById('op-batch').onclick = function () {
+      var ids = Object.keys(state.sel);
+      var waiting = ids.map(function (id) { return window.GDS.get(id); }).filter(function (t) { return t && t.status === '待分派'; });
+      if (!waiting.length) { Shell.toast('请先勾选至少一条「待分派」任务', 'error'); return; }
+      Shell.openModal({ title: '批量分单', size: 'sm', fullscreenable: false,
+        body: '<p style="margin:4px 0">已选 <b>' + waiting.length + '</b> 条待分派任务。演示版先打开第一条的分单页,真实场景支持「应用到所有」。</p>',
+        actions: [ { text: '取消', onClick: Shell.closeModal },
+          { text: '去分单', type: 'primary', onClick: function () { location.href = 'assignment.html?mode=new&id=' + waiting[0].task_id; } } ] });
+    };
+    document.getElementById('op-export').onclick = function () { Shell.toast('已导出当前筛选结果(演示)'); };
+    document.getElementById('op-cols').onclick = function () {
+      Shell.openModal({ title: '列设置', size: 'sm', body: '<p style="margin:4px 0">自定义列显示(演示占位)。</p>', actions: [{ text: '关闭', onClick: Shell.closeModal }] });
+    };
+    document.getElementById('btn-filter').onclick = function () { Shell.toast('高级筛选(演示)'); };
+
+    render();
+  };
+  </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>任务详情 · GDS 任务管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .file-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px dashed var(--g-border-soft); font-size: 12px; }
+    .file-row:last-child { border-bottom: 0; }
+    .file-row .f-ic { width: 24px; height: 24px; border-radius: 4px; background: var(--g-brand-pale); color: var(--g-brand-dark); display: flex; align-items: center; justify-content: center; flex: none; font-size: 11px; }
+  </style>
+</head>
+<body data-page="task-square">
+  <template id="page-content">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" id="pt">任务详情</h1>
+        <p class="page-desc" id="pd">完整任务信息 · 流程记录 · 审批操作</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <a class="btn" href="task-square.html">返回任务广场</a>
+        <a class="btn" href="my-tasks.html">我的任务</a>
+      </div>
+    </div>
+    <div class="panel" id="summary"><div class="g-empty">加载中…</div></div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/gds-ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var D = window.DEMO_DATA, U = window.GDS_UI;
+    var id = (new URLSearchParams(location.search)).get('id');
+
+    function render() {
+      var t = id ? window.GDS.get(id) : null;
+      var box = document.getElementById('summary');
+      if (!t) {
+        document.getElementById('pt').textContent = '未指定任务';
+        box.innerHTML = '<div class="g-empty">未找到对应任务,请从任务广场或我的任务进入。<br><br><a class="btn primary" href="task-square.html">去任务广场</a></div>';
+        return;
+      }
+      document.getElementById('pt').textContent = t.project_name;
+      document.getElementById('pd').innerHTML = t.design_no + ' · ' + t.task_no + ' · 客户 ' + U.esc(t.customer_name || '-') +
+        ' · <span class="tag ' + (D.statusTag[t.status] || 'neutral') + '">' + t.status + '</span>';
+      var filesHtml = (t.uploaded_files && t.uploaded_files.length)
+        ? t.uploaded_files.map(function (f) { return '<div class="file-row"><span class="f-ic">⬢</span><div style="flex:1;min-width:0"><div style="font-weight:600">' + U.esc(f.name) + '</div><div style="color:var(--g-text-weak);font-size:11px">' + f.size + ' · ' + f.time + '</div></div></div>'; }).join('')
+        : '<div class="g-empty" style="padding:16px 0">暂无上传文件</div>';
+      box.innerHTML =
+        '<div class="section-head"><h3>任务概要</h3><button class="btn primary sm" id="open-flow">打开审批详情</button></div>' +
+        '<div class="info-grid" style="--info-cols:3">' +
+          [['项目编号', t.task_no], ['设计单号', t.design_no], ['任务类型·区域', t.task_type + ' · ' + t.region],
+           ['紧急度', t.urgency], ['赏金', t.reward.toFixed(1) + ' WF'], ['执行人员', t.assignee_name || '-'],
+           ['审核人', t.reviewer_name || '-'], ['期望完成', t.expected_complete_time || '-'], ['状态', t.status]]
+          .map(function (kv) { return '<div class="info-item"><div class="k">' + kv[0] + '</div><div class="v">' + U.esc(kv[1]) + '</div></div>'; }).join('') +
+        '</div>' +
+        '<div class="section-head"><h3>已上传文件</h3></div><div style="padding:4px 16px 14px">' + filesHtml + '</div>';
+      document.getElementById('open-flow').onclick = function () { U.openReview(Shell, window.GDS.get(id), render); };
+    }
+
+    render();
+    // 进入页面自动打开审批浮层(左详情 + 右时间线)
+    if (id && window.GDS.get(id)) U.openReview(Shell, window.GDS.get(id), render);
+  };
+  </script>
+</body>
+</html>

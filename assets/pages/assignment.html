@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>分单 · GDS 任务管理</title>
+  <link rel="stylesheet" href="../css/tokens.css">
+  <link rel="stylesheet" href="../css/shell.css">
+  <link rel="stylesheet" href="../css/components.css">
+  <style>
+    .task-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px 16px; padding: 14px 16px; background: var(--g-bg-soft); border-radius: var(--g-radius-6); margin: 12px 16px; }
+    .task-summary .k { font-size: 11px; color: var(--g-text-weak); }
+    .task-summary .v { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  </style>
+</head>
+<body data-page="task-square">
+  <template id="page-content">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title" id="pt">分单</h1>
+        <p class="page-desc">把任务分配给执行人员,保存后状态变为「已分派」</p>
+      </div>
+      <a class="btn" href="task-square.html">返回任务广场</a>
+    </div>
+    <div class="panel" id="wrap"><div class="g-empty">加载中…</div></div>
+  </template>
+
+  <script src="../js/nav-config.js"></script>
+  <script src="../js/data.js"></script>
+  <script src="../js/gds-ui.js"></script>
+  <script src="../js/shell.js"></script>
+  <script>
+  window.onShellReady = function (Shell) {
+    var D = window.DEMO_DATA, U = window.GDS_UI;
+    var q = new URLSearchParams(location.search);
+    var id = q.get('id'), mode = q.get('mode') || 'new';
+    var t = id ? window.GDS.get(id) : null;
+    var wrap = document.getElementById('wrap');
+
+    if (!t) {
+      document.getElementById('pt').textContent = '未指定任务';
+      wrap.innerHTML = '<div class="g-empty">未找到对应任务。<br><br><a class="btn primary" href="task-square.html">去任务广场</a></div>';
+      return;
+    }
+    document.getElementById('pt').textContent = (mode === 'edit' ? '编辑分单 · ' : '分单 · ') + t.design_no;
+
+    var execOptions = D.executors.map(function (m) {
+      return '<option value="' + m.id + '"' + (t.assignee_id === m.id ? ' selected' : '') + '>' + m.name + '(' + m.dept + ')</option>';
+    }).join('');
+
+    wrap.innerHTML =
+      '<div class="task-summary">' +
+        '<div><div class="k">项目名</div><div class="v">' + U.esc(t.project_name) + '</div></div>' +
+        '<div><div class="k">设计单号</div><div class="v">' + t.design_no + '</div></div>' +
+        '<div><div class="k">客户 · 区域</div><div class="v">' + U.esc(t.customer_name || '-') + ' · ' + t.region + '</div></div>' +
+        '<div><div class="k">任务类型</div><div class="v">' + t.task_type + '</div></div>' +
+        '<div><div class="k">紧急度</div><div class="v">' + t.urgency + '</div></div>' +
+        '<div><div class="k">当前状态</div><div class="v">' + t.status + '</div></div>' +
+      '</div>' +
+      '<form class="form-module" id="asn-form">' +
+        '<div class="form-grid" style="--form-cols:2">' +
+          '<div class="form-item"><div class="f-label">执行人员 <span class="req">*</span></div>' +
+            '<select class="field" id="in-exec"><option value="">请选择执行人员</option>' + execOptions + '</select>' +
+            '<div class="f-tip" id="tip-exec"></div></div>' +
+          '<div class="form-item"><div class="f-label">完成时间 <span class="req">*</span></div>' +
+            '<input type="datetime-local" class="field" id="in-time"><div class="f-tip" id="tip-time"></div></div>' +
+          '<div class="form-item"><div class="f-label">赏金(WF) <span class="req">*</span></div>' +
+            '<input type="number" class="field" id="in-reward" min="0" step="1" value="' + t.reward + '"><div class="f-tip" id="tip-reward"></div></div>' +
+          '<div class="form-item"><div class="f-label">当前状态</div><input class="field" value="' + t.status + '" disabled></div>' +
+          '<div class="form-item wide"><div class="f-label">分单备注 <span class="hint">(≤300 字,可选)</span></div>' +
+            '<textarea class="field" id="in-note" maxlength="300" placeholder="给执行人员的说明">' + U.esc(t.note || '') + '</textarea></div>' +
+        '</div>' +
+      '</form>' +
+      '<div class="drawer-foot" style="border-top:1px solid var(--g-border-soft)">' +
+        '<a class="btn" href="task-square.html">取消</a>' +
+        '<button class="btn primary" id="btn-save">确认分单</button>' +
+      '</div>';
+
+    document.getElementById('btn-save').onclick = function () {
+      var exec = document.getElementById('in-exec').value;
+      var time = document.getElementById('in-time').value;
+      var reward = document.getElementById('in-reward').value;
+      wrap.querySelectorAll('.form-item').forEach(function (fi) { fi.classList.remove('error'); });
+      var ok = true;
+      if (!exec) { markErr('in-exec', 'tip-exec', '请选择执行人员'); ok = false; }
+      if (!time) { markErr('in-time', 'tip-time', '请选择完成时间'); ok = false; }
+      if (reward === '' || Number(reward) < 0) { markErr('in-reward', 'tip-reward', '赏金必须 ≥ 0'); ok = false; }
+      if (!ok) return;
+      var m = D.executors.filter(function (x) { return x.id === exec; })[0];
+      window.GDS.update(t.task_id, {
+        assignee_id: exec, assignee_name: m ? m.name : '', department: m ? m.dept : t.department,
+        reviewer_name: D.reviewer, expected_complete_time: time.replace('T', ' '),
+        reward: Number(reward), note: document.getElementById('in-note').value.trim(),
+        assign_time: U.nowStr(), status: '已分派'
+      });
+      Shell.toast('分单成功,状态更新为「已分派」', 'success');
+      setTimeout(function () { location.href = 'task-square.html'; }, 600);
+    };
+
+    function markErr(inputId, tipId, msg) {
+      document.getElementById(inputId).closest('.form-item').classList.add('error');
+      document.getElementById(tipId).textContent = msg;
+    }
+  };
+  </script>
+</body>
+</html>

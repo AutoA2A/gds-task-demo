@@ -1,0 +1,22 @@
+{
+  "skill": "george-ui-v3",
+  "mode": "static-multipage",
+  "figmaSpec": "2026-09-14 (R001~R175, seven-spec-rules.md)",
+  "entry": "index.html",
+  "verifiedForCurrentRequest": false,
+  "sha256": {
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "index.html": "5c00bbf95964c7e175b34e846c4443ba988f56311e9b6dbadbaf628ed18ff9c7",
+    "assets/css/components.css": "d0ac5dd01d8332b71d73c0d187ba6f7ef838ea2a7cf8c70af9c8a5db8a214243",
+    "assets/css/shell.css": "d9538c3958ca86afd1c88a67091dfde254e6ca21dffdfe1979eee58a0a709426",
+    "assets/css/tokens.css": "58728b77c903ccdea9789d15d0b8021c984b7f7deaab8a305a128d9d59a782c1",
+    "assets/js/data.js": "20bd9adb9707cfe9d045fd43fae6b27a78c4afe20f1a9254a8d7acb1504c44d0",
+    "assets/js/nav-config.js": "24c9b89ed9c07a3257949052ff488b6615a50c2b9ce1afa50ad510d1865b53e0",
+    "assets/js/shell.js": "e2cf66854aaf1375f013a49eec7ba2c63fdd267d32b9ef5e9ddc299e53253a27",
+    "assets/pages/cards.html": "571247b632959fc367447ee775510d6bd1b2588229d033cd5197a0f65849f653",
+    "assets/pages/detail.html": "e6ae1bf064796f1c8294243de8c61f443a6f8b8b09e25d2007b11440fb46a201",
+    "assets/pages/form.html": "1d0eb41e093ac651a6301cb868160017dad7962b86b3910fb4a1101d431257b3",
+    "assets/pages/list.html": "27a52c7d298a2d2d21668fd5c9dc5f22879a0f271bc03e769f7ef464199d27f5",
+    "assets/pages/todo.html": "e57c731435dc7e5916416ab8548bdd72002e4ad03b177aa72c103560686c0ffa"
+  }
+}

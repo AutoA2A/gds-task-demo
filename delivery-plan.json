@@ -1,0 +1,92 @@
+{
+  "skill": "george-ui-v3",
+  "demo": "GDS(George Design System)任务管理 演示",
+  "source": "product-requirements.md v1.0",
+  "brand": "George Design",
+  "entry": "index.html",
+  "pages": [
+    { "id": "task-square", "title": "任务广场", "file": "assets/pages/task-square.html", "contentSelector": "#page-content" },
+    { "id": "my-tasks", "title": "我的任务", "file": "assets/pages/my-tasks.html", "contentSelector": "#page-content" },
+    { "id": "review", "title": "任务详情/审批", "file": "assets/pages/review.html", "contentSelector": "#page-content" },
+    { "id": "assignment", "title": "分单表单", "file": "assets/pages/assignment.html", "contentSelector": "#page-content" }
+  ],
+  "features": [
+    {
+      "id": "square-tabs-review",
+      "pageId": "task-square",
+      "description": "页签随审核开关在 待审核/待推送 间切换,数量准确;统计显示紧急/加急/赏金合计",
+      "implementation": ["assets/pages/task-square.html", "assets/js/data.js"],
+      "steps": [
+        { "action": "click", "target": "#review-toggle" },
+        { "action": "expectText", "target": "#review-ind", "value": "审核模式切换,tab 集合随之变化" },
+        { "action": "expectText", "target": "#stats", "value": "赏金合计与条数联动" }
+      ]
+    },
+    {
+      "id": "square-search",
+      "pageId": "task-square",
+      "description": "按字段/关键字/紧急度筛选任务表格,分页与统计联动",
+      "implementation": ["assets/pages/task-square.html", "assets/js/data.js"],
+      "steps": [
+        { "action": "fill", "target": "#f-kw", "value": "Dubai" },
+        { "action": "click", "target": "#f-go" },
+        { "action": "expectCount", "target": "#rows tr", "value": "按关键字过滤" }
+      ]
+    },
+    {
+      "id": "square-review-flow",
+      "pageId": "task-square",
+      "description": "待审核任务点'审核'打开左侧审批浮层(左分组详情+右流程时间线),通过并推送后状态变已完成",
+      "implementation": ["assets/pages/task-square.html", "assets/js/gds-ui.js", "assets/js/shell.js", "assets/css/components.css"],
+      "steps": [
+        { "action": "click", "target": "[data-review]" },
+        { "action": "expectCount", "target": ".approval-flow", "value": "1" },
+        { "action": "expectText", "target": ".af-side .flow-item", "value": "流程节点可见" }
+      ]
+    },
+    {
+      "id": "my-tasks-cards",
+      "pageId": "my-tasks",
+      "description": "左侧只展示分配给当前身份的任务卡片,点击右侧详情更新(stats+5步流程+文件)",
+      "implementation": ["assets/pages/my-tasks.html", "assets/js/data.js", "assets/js/gds-ui.js"],
+      "steps": [
+        { "action": "click", "target": ".mt-card" },
+        { "action": "expectCount", "target": ".detail-step", "value": "4-5 步流程" },
+        { "action": "expectText", "target": ".mt-stat .v", "value": "赏金等 stats 显示" }
+      ]
+    },
+    {
+      "id": "my-tasks-upload",
+      "pageId": "my-tasks",
+      "description": "已分派且分到自己的任务,'上传处理结果'弹窗必填校验,提交后状态转待审核/待推送",
+      "implementation": ["assets/pages/my-tasks.html", "assets/js/gds-ui.js", "assets/js/shell.js"],
+      "steps": [
+        { "action": "click", "target": "#d-upload" },
+        { "action": "expectCount", "target": ".modal", "value": "1" },
+        { "action": "expectText", "target": ".upload-dnd", "value": "上传占位区可见" }
+      ]
+    },
+    {
+      "id": "review-approval",
+      "pageId": "review",
+      "description": "任务详情页加载自动打开审批浮层;驳回/通过/推送 二次确认后真实改变状态",
+      "implementation": ["assets/pages/review.html", "assets/js/gds-ui.js", "assets/js/shell.js", "assets/css/components.css"],
+      "steps": [
+        { "action": "click", "target": "#open-flow" },
+        { "action": "expectCount", "target": ".approval-flow", "value": "1" },
+        { "action": "expectText", "target": ".af-main .section-head h3", "value": "基础信息等分组可见" }
+      ]
+    },
+    {
+      "id": "assignment-form",
+      "pageId": "assignment",
+      "description": "分单表单执行人/完成时间/赏金必填校验,保存后任务转已分派并跳回任务广场",
+      "implementation": ["assets/pages/assignment.html", "assets/js/data.js", "assets/js/gds-ui.js"],
+      "steps": [
+        { "action": "click", "target": "#btn-save" },
+        { "action": "expectText", "target": "#tip-exec", "value": "必填校验提示出现" },
+        { "action": "expectValue", "target": "#in-reward", "value": "赏金默认带出" }
+      ]
+    }
+  ]
+}

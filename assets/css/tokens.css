@@ -1,0 +1,93 @@
+/* ============================================================
+ * George-UI-V3 设计令牌 (Design Tokens)
+ * 严格对应 Figma「设计语言 / 布局模块」规范。来源节点:
+ *   538:5235 (设计语言)  525:5235 (布局模块)
+ * 规则编号见 references/figma/seven-spec-rules.md (R015~R062)
+ * 纯静态:所有页面只需引入本文件即可获得统一变量。
+ * ============================================================ */
+
+:root {
+  /* --- 文本色 (R016) --- */
+  --g-text: #333333;          /* 主文本 */
+  --g-text-sub: #666666;      /* 次文本 */
+  --g-text-weak: #999999;     /* 辅助文本 */
+  --g-text-disabled: #bbbfc4; /* 禁用文本 */
+  --g-text-inverse: #ffffff;
+
+  /* --- 主操作 / 中性 (R015,R018) --- */
+  --g-primary: #222222;       /* 近黑中性(Figma 设计语言主色) */
+  --g-primary-hover: #000000;
+  /* 主按钮配色:真实系统用绿色主按钮(与 Figma R018 的黑色主按钮不同)。
+   * 默认跟随真实系统=绿色;若要严格遵循 Figma 设计语言,改为 var(--g-primary) 即可。 */
+  --g-btn-primary-bg: #74bf28;      /* 绿色主按钮(真实系统) */
+  --g-btn-primary-bg-hover: #65a81f;
+  --g-btn-primary-fg: #ffffff;
+
+  /* --- 品牌主题:绿(默认) (R036~R041) --- */
+  --g-brand: #87d920;         /* 主 */
+  --g-brand-light: #cbeaa8;   /* 浅 */
+  --g-brand-pale: #f7ffef;    /* 淡 */
+  --g-brand-dark: #74bf28;    /* 深 */
+  --g-brand-gray: #e5edde;    /* 灰(选中态底色) */
+
+  /* --- 状态色 (R017,R057~R062):同一业务状态全局同色 --- */
+  --g-success: #5dba00;       /* 通过/启用 */
+  --g-info: #39ace5;          /* 进行中 */
+  --g-error: #e4585a;         /* 驳回/错误 */
+  --g-warning: #d97f00;       /* 待审核/预警 */
+  --g-neutral: #999999;       /* 中性/未开始 */
+
+  /* --- 背景与分隔 (R019) --- */
+  --g-bg: #f7f7f7;            /* 页面背景 */
+  --g-bg-soft: #f9f9f9;       /* 表格浅底 */
+  --g-bg-brand-soft: #fafff4; /* 低饱和品牌底 */
+  --g-surface: #ffffff;       /* 卡片/模块容器 */
+  --g-border: #e2e2e2;        /* 主描边 */
+  --g-border-soft: #eeeeee;   /* 次描边 */
+  --g-fill-hover: rgba(0, 0, 0, 0.05);
+
+  /* --- 字体 (R020~R024):正文不小于 12px,10px 仅用于导航/角标 --- */
+  --g-font: 'Source Han Sans SC', 'PingFang SC', 'Microsoft YaHei', -apple-system, sans-serif;
+  --g-fs-10: 10px;            /* 导航/版本号/角标 */
+  --g-fs-12: 12px;            /* 正文/表格主用 */
+  --g-fs-13: 13px;            /* 页签/卡片标题 */
+  --g-fs-14: 14px;            /* 模块标题/强调 */
+  --g-fs-16: 16px;            /* 页面/品牌标题 */
+  --g-fw-regular: 400;
+  --g-fw-bold: 700;
+  --g-lh-body: 1.5;           /* 表格正文 150% 行高 (R023) */
+
+  /* --- 圆角 (R025):收敛到 2/4/6/8 --- */
+  --g-radius-2: 2px;
+  --g-radius-4: 4px;
+  --g-radius-6: 6px;
+  --g-radius-8: 8px;
+
+  /* --- 间距 (R030):4 的倍数 --- */
+  --g-space-4: 4px;
+  --g-space-8: 8px;           /* 控件内 */
+  --g-space-12: 12px;         /* 布局基准间距 (R077) */
+  --g-space-16: 16px;         /* 字段组 */
+  --g-space-24: 24px;         /* 模块间 */
+  --g-space-32: 32px;
+
+  /* --- 控件/布局尺寸 (R031~R033,R002) --- */
+  --g-control-h: 32px;        /* 筛选输入/下拉/全局按钮高度 */
+  --g-row-head: 40px;         /* 表头行高 */
+  --g-row-body: 44px;         /* 普通数据行高(真实系统偏紧凑) */
+  --g-row-pad-y: 6px;         /* 表格内容上下留白 (R102) */
+
+  /* --- 外壳结构 (R063~R083) --- */
+  --g-top-h: 48px;            /* 顶部操作区(真实系统约 48) */
+  --g-primary-w: 74px;        /* 一级导航 */
+  --g-secondary-w: 100px;     /* 二/三级导航(收起为 0) */
+  --g-shell-gap: 12px;        /* 内容区与导航/右边距 (R077) */
+
+  --g-shadow-pop: 0 6px 24px rgba(0, 0, 0, 0.12);
+  --g-shadow-drawer: -8px 0 32px rgba(0, 0, 0, 0.12);
+}
+
+/* 主题切换(多系统视觉区分 R036):给 <html data-theme="purple|blue|orange"> */
+html[data-theme='purple'] { --g-brand:#9e7eff; --g-brand-light:#bbaeff; --g-brand-pale:#e5e3fa; --g-brand-dark:#7b63e0; --g-brand-gray:#eceafa; }
+html[data-theme='blue']   { --g-brand:#2563ea; --g-brand-light:#6c9aff; --g-brand-pale:#d8e4ff; --g-brand-dark:#2e69e5; --g-brand-gray:#eaedfa; }
+html[data-theme='orange'] { --g-brand:#ee8720; --g-brand-light:#f6c38f; --g-brand-pale:#fdf3e8; --g-brand-dark:#d96e00; --g-brand-gray:#f4f1ef; }
