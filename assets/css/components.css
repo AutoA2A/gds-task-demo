@@ -15,7 +15,7 @@
 .btn {
   height: var(--g-control-h); padding: 0 12px; border-radius: var(--g-radius-4);
   border: 1px solid var(--g-border); background: var(--g-surface); color: var(--g-text);
-  font-family: inherit; font-size: var(--g-fs-12); cursor: pointer;
+  font-family: inherit; font-size: var(--g-fs-12); cursor: pointer; text-decoration: none;
   display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap;
 }
 .btn:hover { border-color: var(--g-brand-dark); color: var(--g-brand-dark); }
@@ -27,8 +27,8 @@
 .btn.sm { height: 26px; padding: 0 8px; }
 /* 下拉型按钮(真实系统工具栏:上传产品▾ 全量下载▾) */
 .btn .caret { font-size: 9px; opacity: 0.7; margin-left: 2px; }
-.link-btn { border: 0; background: none; color: var(--g-brand-dark); cursor: pointer; font-size: var(--g-fs-12); padding: 0; font-family: inherit; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; }
-.link-btn:hover { color: #65a81f; text-decoration: underline; }
+.link-btn { border: 0; background: none; color: var(--g-brand-dark); cursor: pointer; font-size: var(--g-fs-12); padding: 0; font-family: inherit; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; text-decoration: none; }
+.link-btn:hover { color: #65a81f; text-decoration: none; }
 .link-btn.danger { color: var(--g-error); }
 .icon-btn { width: 28px; height: 28px; border: 1px solid var(--g-border); background: var(--g-surface); border-radius: var(--g-radius-4); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--g-text-sub); flex: none; }
 .icon-btn:hover { color: var(--g-brand-dark); border-color: var(--g-brand-dark); }
@@ -181,8 +181,8 @@ table.g-table tbody tr:hover td.col-op { background: var(--g-brand-pale); }
 .drawer-foot { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 16px; background: var(--g-surface); border-top: 1px solid var(--g-border); }
 
 /* ---------------- 审批流面板(宽面板:左详情 + 右审批节点,对齐真实 OA 审批详情) ---------------- */
-.drawer.approval { left: 40px; width: auto; max-width: none; background: var(--g-bg); container-type: inline-size; }
-.approval-flow { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 340px; }
+.drawer.approval { left: auto; width: min(900px, 90vw); max-width: none; background: var(--g-bg); container-type: inline-size; }
+.approval-flow { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; }
 .af-main { min-width: 0; overflow: auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; background: var(--g-bg); }
 .af-section { background: var(--g-surface); border: 1px solid var(--g-border); border-radius: var(--g-radius-6); }
 .af-section .section-head { border-bottom: 1px solid var(--g-border-soft); }
@@ -200,7 +200,7 @@ table.g-table tbody tr:hover td.col-op { background: var(--g-brand-pale); }
 .af-actions { flex: none; display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--g-border); background: var(--g-surface); }
 .btn.danger-outline { color: var(--g-error); border-color: var(--g-error); background: var(--g-surface); }
 .btn.danger-outline:hover { background: rgba(228, 88, 90, 0.08); color: var(--g-error); border-color: var(--g-error); }
-@container (max-width: 900px) { .approval-flow { grid-template-columns: 1fr; } .af-side { border-left: 0; border-top: 1px solid var(--g-border); } }
+@container (max-width: 760px) { .approval-flow { grid-template-columns: 1fr; } .af-side { border-left: 0; border-top: 1px solid var(--g-border); } }
 
 /* ---------------- 居中弹窗 modal(相对视口居中,最高层级,防错位) ---------------- */
 .modal-wrap { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; transition: opacity 0.18s ease; }
