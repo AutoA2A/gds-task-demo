@@ -88,18 +88,6 @@
     var D = window.DEMO_DATA, U = window.GDS_UI;
     var state = { tab: 'all', field: 'all', kw: '', urg: '', page: 1, size: 10, sel: {} };
 
-    // 执行人员进入广场 → 引导到我的任务(PRD 异常场景)
-    if (Shell.currentIdentity().role === '执行人员') {
-      Shell.openModal({
-        title: '提示', size: 'sm', fullscreenable: false,
-        body: '<p style="margin:4px 0">任务广场面向分单管理员。执行人员请使用「我的任务」查看分配给自己的任务。</p>',
-        actions: [
-          { text: '留在本页', onClick: Shell.closeModal },
-          { text: '前往我的任务', type: 'primary', onClick: function () { location.href = 'my-tasks.html'; } }
-        ]
-      });
-    }
-
     function statusTabs() {
       return window.GDS.reviewOn()
         ? ['全部', '待分派', '已分派', '待审核', '已完成']

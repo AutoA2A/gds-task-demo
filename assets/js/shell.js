@@ -134,8 +134,8 @@
     /* ---------- 二/三级导航 (无下级则不渲染,R072/R075) ---------- */
     var secondary = h('div', { class: 'sys-secondary' });
     if (hasSecondary) {
-      var head = h('div', { style: 'display:flex;align-items:center;justify-content:space-between' });
-      head.appendChild(h('h2', null, activePrimary.label));
+      var head = h('div', { class: 'sec-head' });
+      head.appendChild(h('h2', { title: activePrimary.label }, activePrimary.label));
       var collapseBtn = h('button', { class: 'sys-icon-btn', title: '收起导航', style: 'width:28px;height:28px' }, svg('collapse'));
       collapseBtn.addEventListener('click', function () {
         var cur = shell.getAttribute('data-secondary');
